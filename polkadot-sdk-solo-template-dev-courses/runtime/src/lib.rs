@@ -252,6 +252,13 @@ impl pallet_template::Config for Runtime {
     type WeightInfo = pallet_template::weights::SubstrateWeight<Runtime>;
 }
 
+impl pallet_expo_cert::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type MaxCompanyVecLimit = ConstU32<3>;
+    type MaxExhibitionApplyVecLimit = ConstU32<3>;
+    type DefaultCertLimit = ConstU8<3>;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 #[frame_support::runtime]
 mod runtime {
@@ -293,6 +300,9 @@ mod runtime {
     // Include the custom logic from the pallet-template in the runtime.
     #[runtime::pallet_index(7)]
     pub type TemplateModule = pallet_template;
+
+    #[runtime::pallet_index(8)]
+    pub type ExpoCert = pallet_expo_cert;
 }
 
 /// The address format for describing accounts.
