@@ -3,7 +3,7 @@ use frame_support::{
     derive_impl,
     traits::{ConstU16, ConstU64},
 };
-use sp_core::{ConstU32, ConstU8, H256};
+use sp_core::H256;
 use sp_runtime::{
     traits::{BlakeTwo256, IdentityLookup},
     BuildStorage,
@@ -49,9 +49,6 @@ impl frame_system::Config for Test {
 
 impl pallet_expo_cert::Config for Test {
     type RuntimeEvent = RuntimeEvent;
-    type MaxCompanyVecLimit = ConstU32<1000>;
-    type MaxExhibitionApplyVecLimit = ConstU32<3>;
-    type DefaultCertLimit = ConstU8<3>;
 }
 
 // Build genesis storage according to the mock runtime.

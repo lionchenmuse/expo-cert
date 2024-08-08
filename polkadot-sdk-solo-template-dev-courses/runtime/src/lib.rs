@@ -254,9 +254,6 @@ impl pallet_template::Config for Runtime {
 
 impl pallet_expo_cert::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type MaxCompanyVecLimit = ConstU32<3>;
-    type MaxExhibitionApplyVecLimit = ConstU32<3>;
-    type DefaultCertLimit = ConstU8<3>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

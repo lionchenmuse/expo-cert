@@ -1,45 +1,213 @@
 
-use frame_support::assert_ok;
-
-use crate::{mock::{new_test_ext, ExpoCert, RuntimeOrigin, System, Test}, model::model::{BoothType, Company, Exhibition, ExhibitionApply, ParticipationPurpose}, CompanyData, ExhibitionApplyData};
-
-// 为什么单元测试的时候，重复调用同一个pallet::call，并在 BoundedVec存入多个数据后，数据会自己丢失？
-// 上一次调用结束BoundedVec显示长度是2，接下来一次调用，
-// 刚进入方法内部，未执行任何处理逻辑，BoundedVec长度变成1？
+use frame_support::{assert_noop, assert_ok};
+use crate::{mock::{new_test_ext, ExpoCert, RuntimeOrigin, System, Test}, model::model::{ApplyId, AuditStatus, CertApply, ExhibitionApply}, Error};
 
 #[test]
 fn test_company_apply() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
 
-        let mut company: Company = Company::new();
-        company.name = "区块链公司1".as_bytes().to_vec().try_into().unwrap();
-        company.address = "北京".as_bytes().to_vec().try_into().unwrap();
-        company.contact = "张三".as_bytes().to_vec().try_into().unwrap();
-        company.email = "tom@abc.com".as_bytes().to_vec().try_into().unwrap();
-        company.mobile = "13800000000".as_bytes().to_vec().try_into().unwrap();
-        company.business_scope = "区块链技术、WEB3、展会上链".as_bytes().to_vec().try_into().unwrap();
+        let id = "123456789".to_string();
+        let mut apply_id = ApplyId::new();
+        for c in id.chars() {
+            apply_id.try_push(c as u8).expect("push char to apply_id failed");
+        }
 
-        let mut exhibition_apply: ExhibitionApply = ExhibitionApply::new();
-        exhibition_apply.exhibition = Some(Exhibition::CAEXPO);
-        exhibition_apply.participation_purpose = Some(ParticipationPurpose::Exhibit);
-        exhibition_apply.exhibits = Some("展品1, 展品2".as_bytes().to_vec().try_into().unwrap());
-        exhibition_apply.booth_type = Some(BoothType::Standard(3));
+        let apply = ExhibitionApply {
+            id: apply_id.clone(),
+            status: crate::model::model::AuditStatus::Pending,
+        };
 
-        assert_ok!(ExpoCert::company_apply(
-            RuntimeOrigin::signed(1), 
-            company.clone(), 
-            exhibition_apply.clone()));
+        assert_ok!(ExpoCert::company_apply(RuntimeOrigin::signed(1), apply.clone()));
 
-        let company_vec = CompanyData::<Test>::get(1_u64).unwrap();
-        assert_eq!(company_vec.len(), 1);
+        let apply_in_chain = 
+            ExpoCert::exhibition_applies(apply_id.clone()).unwrap();
 
-        assert!(company_vec.contains(&company));
-        println!("company id: {:?}", company_vec[0].id());
-
-        let apply_vec = ExhibitionApplyData::<Test>::get(company_vec[0].id().unwrap()).unwrap();
-        assert_eq!(apply_vec.len(), 1);
-        assert!(apply_vec.contains(&exhibition_apply));
-        println!("apply id: {:?}", apply_vec[0].id());
+        assert_eq!(apply, apply_in_chain);     
+        assert_eq!(apply_in_chain.status, AuditStatus::Approved);   
     });
 }
+
+#[test]
+fn test_multi_company_apply() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+
+        let id = "123456789".to_string();
+        let mut apply_id = ApplyId::new();
+        for c in id.chars() {
+            apply_id.try_push(c as u8).expect("push char to apply_id failed");
+        }
+
+        let apply = ExhibitionApply {
+            id: apply_id.clone(),
+            status: crate::model::model::AuditStatus::Pending,
+        };
+
+        assert_ok!(ExpoCert::company_apply(RuntimeOrigin::signed(1), apply.clone()));
+        let apply_in_chain = 
+            ExpoCert::exhibition_applies(apply_id.clone()).unwrap();
+
+        assert_eq!(apply, apply_in_chain);        
+
+        apply_id.try_push(0).expect("push char to apply_id failed");
+
+        let apply2 = ExhibitionApply {
+            id: apply_id.clone(),
+            status: crate::model::model::AuditStatus::Pending,
+        };
+
+        assert_ok!(ExpoCert::company_apply(RuntimeOrigin::signed(1), apply2.clone()));
+        let apply_in_chain2 = 
+            ExpoCert::exhibition_applies(apply_id.clone()).unwrap();
+
+        assert_eq!(apply2, apply_in_chain2);        
+
+    })
+}
+
+#[test]
+fn test_repeated_apply() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+
+        let id = "123456789".to_string();
+        let mut apply_id = ApplyId::new();
+        for c in id.chars() {
+            apply_id.try_push(c as u8).expect("push char to apply_id failed");
+        }
+
+        let apply = ExhibitionApply {
+            id: apply_id.clone(),
+            status: crate::model::model::AuditStatus::Pending,
+        };
+
+        assert_ok!(ExpoCert::company_apply(RuntimeOrigin::signed(1), apply.clone()));
+        let apply_in_chain = 
+            ExpoCert::exhibition_applies(apply_id.clone()).unwrap();
+
+        assert_eq!(apply, apply_in_chain);        
+
+        let apply2 = ExhibitionApply {
+            id: apply_id.clone(),
+            status: crate::model::model::AuditStatus::Pending,
+        };
+
+        assert_noop!(
+            ExpoCert::company_apply(RuntimeOrigin::signed(1), apply2.clone()),
+            Error::<Test>::CompanyRepeatedApply
+        );
+
+    })
+}
+
+#[test]
+fn test_cert_apply() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+
+        let id = "123456789".to_string();
+        let mut apply_id = ApplyId::new();
+        for c in id.chars() {
+            apply_id.try_push(c as u8).expect("push char to apply_id failed");
+        }
+
+        let apply = ExhibitionApply {
+            id: apply_id.clone(),
+            status: crate::model::model::AuditStatus::Pending,
+        };
+
+        assert_ok!(ExpoCert::company_apply(RuntimeOrigin::signed(1), apply.clone()));
+
+        let id = "987654321".to_string();
+        let mut cert_apply_id = ApplyId::new();
+        for c in id.chars() {
+            cert_apply_id.try_push(c as u8).expect("push char to apply_id failed");
+        }
+
+        let cert_apply = CertApply {
+            id: cert_apply_id.clone(),
+            exhibition_apply_id: apply_id.clone(),
+            status: crate::model::model::CertStatus::Pending,
+        };
+
+        assert_ok!(ExpoCert::cert_apply(RuntimeOrigin::signed(1), cert_apply.clone()));
+
+        let cert_apply_in_chain = 
+            ExpoCert::cert_applies(cert_apply_id.clone()).unwrap();
+
+        assert_eq!(cert_apply, cert_apply_in_chain);        
+    })
+}
+
+#[test]
+fn test_cert_apply_failure() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+
+        // 测试未报名直接申请证件
+        let id = "123456789".to_string();
+        let mut apply_id = ApplyId::new();
+        for c in id.chars() {
+            apply_id.try_push(c as u8).expect("push char to apply_id failed");
+        }
+
+        let id = "987654321".to_string();
+        let mut cert_apply_id = ApplyId::new();
+        for c in id.chars() {
+            cert_apply_id.try_push(c as u8).expect("push char to apply_id failed");
+        }
+
+        let cert_apply = CertApply {
+            id: cert_apply_id.clone(),
+            exhibition_apply_id: apply_id.clone(),
+            status: crate::model::model::CertStatus::Pending,
+        };
+
+        assert_noop!(
+            ExpoCert::cert_apply(RuntimeOrigin::signed(1), cert_apply.clone()),
+            Error::<Test>::CompanyNotApply
+        );
+    });
+}
+
+#[test]
+fn test_cert_apply_repeated() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+
+        let id = "123456789".to_string();
+        let mut apply_id = ApplyId::new();
+        for c in id.chars() {
+            apply_id.try_push(c as u8).expect("push char to apply_id failed");
+        }
+
+        let apply = ExhibitionApply {
+            id: apply_id.clone(),
+            status: crate::model::model::AuditStatus::Pending,
+        };
+
+        assert_ok!(ExpoCert::company_apply(RuntimeOrigin::signed(1), apply.clone()));
+
+        let id = "987654321".to_string();
+        let mut cert_apply_id = ApplyId::new();
+        for c in id.chars() {
+            cert_apply_id.try_push(c as u8).expect("push char to apply_id failed");
+        }
+
+        let cert_apply = CertApply {
+            id: cert_apply_id.clone(),
+            exhibition_apply_id: apply_id.clone(),
+            status: crate::model::model::CertStatus::Pending,
+        };
+
+        assert_ok!(ExpoCert::cert_apply(RuntimeOrigin::signed(1), cert_apply.clone()));
+
+        assert_noop!(
+            ExpoCert::cert_apply(RuntimeOrigin::signed(1), cert_apply.clone()),
+            Error::<Test>::CertRepeatedApply
+        );
+    });
+}
+
+        

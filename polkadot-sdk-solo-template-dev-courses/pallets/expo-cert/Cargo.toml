@@ -35,6 +35,8 @@ sp-std = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkad
 # error: the wasm*-unknown-unknown targets are not supported by default, you may need to enable the "js" feature.
 # sp-core = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.10.0" }
 
+log = "0.4.22"
+
 [dev-dependencies]
 sp-core = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.10.0" }
 sp-io = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.10.0" }
