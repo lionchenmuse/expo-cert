@@ -30,7 +30,7 @@ export const sleep = async (ms: number) => {
   await new Promise((resolve) => setTimeout(resolve, ms));
 };
 
-export const initial_apply = () => {
+export const initial_companies_applies = () => {
   let name = "测试公司";
   let mobile = "1801234567";
 
@@ -52,7 +52,6 @@ export const initial_apply = () => {
       } else {
         apply.boothNumOrArea = i * 60;
       }
-      apply.calculateCertNum();
     }
     apply.status = AuditStatus.Pending;
     save_company_apply(1, company, apply);
@@ -67,29 +66,20 @@ export const initial_person_passcert = () => {
 
 /** 初始化证件申请表*/
 export const initial_passcerts = () => {
-  let numOfVisitorCert = new Map<string, number>();
-  let numOfExhibitorCert = new Map<string, number>();
   Person_Store.forEach((person) => {
     const apply = ExhibitionApply_Store.filter(
       (a) => a.companyId === person.companyId,
     )[0];
 
-    if (numOfExhibitorCert.get(apply.id!) === undefined) {
-      numOfExhibitorCert.set(apply.id!, 0);
+    let cert: PassCert;
+    if (apply.purpose === Purpose.Purchase) {
+      // 如果是采购商，那么只申请专业观众证
+      cert = new PassCert(apply.id!, person.id!, CertType.PurchaserCert);
+    } else {
+      // 如果是参展商，那么专业观众证和参展商证都可申请
+      cert = new PassCert(apply.id!, person.id!, CertType.ExhibitorCert);
     }
-    if (numOfVisitorCert.get(apply.id!) === undefined) {
-      numOfVisitorCert.set(apply.id!, 0);
-    }
-
-    const cert = new PassCert(
-      apply.id!,
-      person.id!,
-      apply.numOfVisitorCert! > numOfVisitorCert.get(apply.id!)!
-        ? CertType.PurchaserCert
-        : CertType.ExhibitorCert,
-    );
     cert.id = genUUID();
-    cert.status = CertStatus.Pending;
 
     PassCert_Store.set(person.id as string, cert);
   });
@@ -98,28 +88,6 @@ export const initial_passcerts = () => {
 /** 初始化人员信息表 */
 export const initial_persons = () => {
   let familyName = "张";
-  let givenNames = [
-    "一",
-    "二",
-    "三",
-    "四",
-    "五",
-    "六",
-    "七",
-    "八",
-    "九",
-    "十",
-    "十一",
-    "十二",
-    "十三",
-    "十四",
-    "十五",
-    "十六",
-    "十七",
-    "十八",
-    "十九",
-    "二十",
-  ];
   let positions = [
     "总经理",
     "副总经理",
@@ -137,26 +105,26 @@ export const initial_persons = () => {
     return;
   }
 
-  for (let i = 0; i < givenNames.length; i++) {
-    let name = familyName + givenNames[i];
+  for (let i = 0; i < 20; i++) {
+    let name = familyName + (i + 1);
     // 随机生成18-60岁年龄
     let age = Math.floor(Math.random() * 43) + 18;
-    let gender_random = Math.random() * 3 + 1;
+    let gender_random = Math.floor(Math.random() * 3) + 1;
     let gender: Gender;
     switch (gender_random % 3) {
       case 1:
-        gender = Gender.Unknown;
-        break;
-      case 2:
         gender = Gender.MALE;
         break;
-      default:
+      case 2:
         gender = Gender.FEMALE;
+        break;
+      default:
+        gender = Gender.Unknown;
+        break;
     }
     let position = positions[Math.floor(Math.random() * positions.length)];
     let companies: Company[] = Company_Store.get(Key_Store[0].address)!;
     let company = companies[Math.floor(Math.random() * companies.length)];
-    // console.log(`Company:\n ${company.toString()}`);
 
     let person = new Person(
       company.id!,
@@ -167,7 +135,6 @@ export const initial_persons = () => {
       position,
     );
     person.id = genUUID();
-    // console.log(`Person:\n ${person.toString()}`);
 
     Person_Store.push(person);
   }
@@ -339,4 +306,15 @@ export async function readInput(prompt: string): Promise<string> {
       resolve(input);
     });
   });
+}
+export function getEnumName<T extends string | number>(
+  enumType: any,
+  value: T,
+): string {
+  for (const key in enumType) {
+    if (enumType[key] === value) {
+      return key;
+    }
+  }
+  return String(value);
 }

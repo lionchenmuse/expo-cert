@@ -58,8 +58,6 @@ export const send_company_apply_with_keyringpair = async (
   apply: ExhibitionApply,
 ) => {
   return new Promise(async (resolve, reject) => {
-    setPrintStarFlag(true);
-    printStar();
     let success = true;
     try {
       const tx = await api.tx.expoCert.companyApply({
@@ -69,7 +67,6 @@ export const send_company_apply_with_keyringpair = async (
       await tx.signAndSend(sender, async ({ events = [], status }) => {
         // Ready 状态表示交易已经被发送到网络，但还没有被打包到区块中
         if (status.isReady) {
-          setPrintStarFlag(false);
           console.log(`Current status: ${status.type} ....... `);
           setPrintStarFlag(true);
           printStar();
@@ -100,7 +97,10 @@ export const send_company_apply_with_keyringpair = async (
             setPrintStarFlag(true);
             printStar();
           } catch (error) {
+            setPrintStarFlag(false);
             console.log("send_company_apply_with_keyringpair() error:", error);
+            setPrintStarFlag(true);
+            printStar();
             success = false;
           }
 

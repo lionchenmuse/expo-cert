@@ -10,7 +10,8 @@ import {
   connect,
   createKeyring,
   genUUID,
-  initial_apply,
+  getEnumName,
+  initial_companies_applies,
   initial_person_passcert,
   readInput,
   readRuntimeVersion,
@@ -37,8 +38,8 @@ import {
   send_company_apply,
   send_company_apply_with_keyringpair,
 } from "./services/exhibitionApplyServices";
-import { CertType, PassCert } from "./models/passCert";
-import { certApply } from "./services/passCertServices";
+import { CertStatus, CertType, PassCert } from "./models/passCert";
+import { certApply, modify_cert_status } from "./services/passCertServices";
 
 const main = async () => {
   console.log("欢迎来到Expo Universe\n");
@@ -61,7 +62,8 @@ const main = async () => {
     console.log("5. 报名查询");
     console.log("6. 申请证件");
     console.log("7. 证件查询");
-    console.log("8. 初始化报名信息");
+    console.log("8. 修改证件状态");
+    console.log("9. 初始化报名信息");
     console.log("0. 退出");
     console.log();
 
@@ -85,19 +87,22 @@ const main = async () => {
         await transferAmount(api, keyring);
         break;
       case "4":
-        await companyApply(api, keyring); // 企业报名
+        // await companyApply(api, keyring); // 企业报名
+        checkApplies(); // 查询报名信息
+        await choose_company_to_apply(api, keyring);
         break;
       case "5":
-        await checkApplies(api, keyring); // 查询报名信息
+        checkApplies(); // 查询报名信息
         break;
       case "6":
-        console.log("申请证件 TODO...");
-
+        await newCertApply(api, keyring); // 申请证件
         break;
       case "7":
-        await checkPassCerts(api, keyring); // 查询证件信息
-        break;
+        checkPassCerts(); // 查询证件信息
       case "8":
+        await modifyCertStatus(api, keyring); // 修改证件状态
+        break;
+      case "9":
         initialDatas(api, keyring); // 初始化报名信息
         break;
       default:
@@ -205,159 +210,33 @@ async function transferAmount(api: ApiPromise, keyring: Keyring) {
   }
 }
 
-const companyApply = async (api: ApiPromise, keyring: Keyring) => {
-  console.log("已有用户列表：");
-  accountList();
-  let input = await readInput("请选择用户(输入0退出)>: ");
-  if (input === "0") {
-    console.log("已退出展会报名，回到主程序。");
-    return;
-  }
-  // 将 input 转换为数字
-  const index = parseInt(input, 10);
-  if (isNaN(index) || index < 0 || index > Key_Store.length) {
-    console.log("无效的选项，回到主程序。\n");
-    return;
-  }
-  let company = await enterCompanyInfo(index);
-  if (company === null) {
-    return;
-  }
-
-  let apply = await enteryApplyInfo(company.id!);
-  if (apply === null) {
-    return;
-  }
-  let success = save_company_apply(index, company, apply);
-  if (success) {
-    await send_company_apply(api, keyring, index, apply);
-  }
-};
-
-async function enterCompanyInfo(index: number): Promise<Company | null> {
-  console.log("请输入公司信息：");
-  let name = await readInput("公司名称(输入0退出)>: ");
-  name = name.trim();
-  if (name === "0") {
-    console.log("已退出，回到主程序。");
-    return null;
-  }
-  // 遍历 Company_Store Map，检查公司是否已存在
-  for (let [_, companies] of Company_Store) {
-    for (let c of companies) {
-      if (c.name === name) {
-        console.log("公司已存在。退出，回到主程序。");
-        return null;
-      }
-    }
-  }
-
-  let mobile = await readInput("联系方式（手机）(输入0退出)：");
-  let company = new Company(name, mobile);
-
-  company.id = genUUID();
-  company.userAddress = Key_Store[index - 1].address;
-  return company;
-}
-
-async function enteryApplyInfo(
-  companyId: string,
-): Promise<ExhibitionApply | null> {
-  // 遍历 Exhibition_Store []，检查公司是否已报名
-  for (let a of ExhibitionApply_Store) {
-    if (a.companyId === companyId) {
-      console.log("公司已报名。退出，回到主程序。");
-      return null;
-    }
-  }
-
-  console.log("请输入展会报名信息：");
-  console.log("参加展会目的：");
-  console.log("1. 参展\n2. 采购");
-  let purpose = await readInput("请选择序号(输入0退出)>: ");
-  let apply: ExhibitionApply | null = null;
-  switch (purpose) {
-    case "0":
-      console.log("已退出，回到主程序。");
-      return null;
-    case "1":
-      apply = new ExhibitionApply(companyId, Purpose.Exhibit);
-      break;
-    case "2":
-      apply = new ExhibitionApply(companyId, Purpose.Purchase);
-      break;
-    default:
-      console.log("无效的选项，已退出，回到主程序。");
-      return null;
-  }
-
-  if (apply!.purpose === Purpose.Exhibit) {
-    let exhibits = await readInput("请输入展品(输入0退出)>: ");
-    if (exhibits === "0") {
-      console.log("已退出，回到主程序。");
-      return null;
-    }
-    apply!.exhibits = exhibits;
-
-    console.log("请选择展位类型：");
-    console.log("1. 标准展位\n2. 净地展位");
-    let boothType = await readInput("请选择序号(输入0退出)>: ");
-    switch (boothType) {
-      case "0":
-        console.log("已退出，回到主程序。");
-        return null;
-      case "1":
-        apply!.boothType = BoothType.Standard;
-        break;
-      case "2":
-        apply!.boothType = BoothType.BareSpace;
-        break;
-      default:
-        console.log("无效的选项，已退出，回到主程序。");
-        return null;
-    }
-    let boothNumOrAreaStr = await readInput(
-      "请输入展位数量或面积(输入0退出)>: ",
-    );
-    if (boothNumOrAreaStr === "0") {
-      console.log("已退出，回到主程序。");
-      return null;
-    }
-    let boothNumOrArea = parseInt(boothNumOrAreaStr, 10);
-    if (isNaN(boothNumOrArea) || boothNumOrArea < 0) {
-      console.log("无效输入，已退出，回到主程序。");
-      return null;
-    }
-    apply!.boothNumOrArea = boothNumOrArea;
-    apply.calculateCertNum();
-  }
-  apply.status = AuditStatus.Pending;
-
-  return apply;
-}
-
-const checkApplies = async (api: ApiPromise, keyring: Keyring) => {
+const checkApplies = (condition: AuditStatus | null = null) => {
   console.log("报名信息如下：\n");
 
   for (let [_, companies] of Company_Store) {
     for (let c of companies) {
-      console.log(`公司名称：${c.name}\n联系方式：${c.mobile}`);
       for (let a of ExhibitionApply_Store) {
         if (a.companyId === c.id) {
+          if (condition !== null && a.status !== condition) {
+            // 如果不满足条件，跳过
+            continue;
+          }
+          console.log(`公司名称：${c.name}\n联系方式：${c.mobile}`);
           console.log(
             `参加展会目的：${
               a.purpose === Purpose.Exhibit ? "参展" : "采购"
             }\n展品：${a.exhibits}\n展位类型：${
               a.boothType === BoothType.Standard ? "标准展位" : "净地展位"
-            }\n展位数量或面积：${a.boothNumOrArea}\n专业观众证数量：${
-              a.numOfVisitorCert
-            }\n参展商证数量：${a.numOfExhibitorCert}
+            }\n展位数量或面积：${a.boothNumOrArea}
             \n状态：${a.status === AuditStatus.Approved ? "已通过" : a.status === AuditStatus.Pending ? "待审" : "已驳回"}\n`,
           );
         }
       }
     }
   }
+};
+
+const choose_company_to_apply = async (api: ApiPromise, keyring: Keyring) => {
   let input = await readInput("请输入公司名称(输入0退出)>: ");
   if (input === "0") {
     console.log("已退出，回到主程序。");
@@ -385,9 +264,65 @@ const checkApplies = async (api: ApiPromise, keyring: Keyring) => {
   await send_company_apply_with_keyringpair(api, keyring, keypair!, apply);
 };
 
+const modifyCertStatus = async (api: ApiPromise, keyring: Keyring) => {
+  printPersonCerts();
+  let name = await readInput("请输入人员姓名(输入0退出)>: ");
+  name = name.trim();
+  if (name === "0") {
+    console.log("已退出，回到主程序。");
+    return;
+  }
+  let results = findPersonAndCertAndPubKeyByName(name);
+  if (results[0] === null) {
+    return;
+  }
+  console.log("请选择要修改的状态：");
+  console.log("1. 待审核");
+  console.log("2. 通过");
+  console.log("3. 驳回");
+  console.log("4. 已制证");
+  console.log("5. 已发证");
+
+  let statusIdx = await readInput("请输入状态序号(输入0退出)>: ");
+  statusIdx = statusIdx.trim();
+  if (statusIdx === "0") {
+    console.log("已退出，回到主程序。");
+    return;
+  }
+  let newStatus: CertStatus;
+  switch (statusIdx) {
+    case "1":
+      newStatus = CertStatus.Pending;
+      break;
+    case "2":
+      newStatus = CertStatus.Approved;
+      break;
+    case "3":
+      newStatus = CertStatus.Rejected;
+      break;
+    case "4":
+      newStatus = CertStatus.Made;
+      break;
+    case "5":
+      newStatus = CertStatus.Issued;
+      break;
+    default:
+      console.log("无效的选项，已退出，回到主程序。");
+      return;
+  }
+
+  modify_cert_status(
+    api,
+    keyring,
+    results[2]! as KeyringPair,
+    results[1]! as PassCert,
+    newStatus,
+  );
+};
+
 const initialDatas = (api: ApiPromise, keyring: Keyring) => {
   console.log("\n初始化公司报名信息...\n");
-  initial_apply();
+  initial_companies_applies();
   console.log("公司报名信息初始化完成。\n");
   console.log("初始化证件申请信息...\n");
   initial_person_passcert();
@@ -425,9 +360,9 @@ const findKeypairByAddress = (address: string): KeyringPair | null => {
   return null;
 };
 
-const checkPassCerts = async (api: ApiPromise, keyring: Keyring) => {
+const checkPassCerts = () => {
   printPersonCerts();
-  await applyCert(api, keyring);
+  //
 };
 
 const printPersonCerts = () => {
@@ -445,7 +380,13 @@ const printPersonCerts = () => {
             `人员id：${p.id}\n姓名：${p.name}\n年龄：${p.age}\n性别：${p.gender.toString()}\n手机：${p.mobile}\n职位：${p.position}\n`,
           );
           console.log(
-            `证件申请id：${passCert.id}\n申请人id：${passCert.personId}\n展会证件：${passCert.certType === CertType.ExhibitorCert ? "参展商证" : "专业观众证"}\n`,
+            `证件申请id：${passCert.id}\n申请人id：${passCert.personId}`,
+          );
+          console.log(
+            `展会证件：${passCert.certType === CertType.ExhibitorCert ? "参展商证" : "专业观众证"}`,
+          );
+          console.log(
+            `状态：${getEnumName(CertStatus, passCert.status)}\n是否已上链：${passCert.onChain ? "是" : "否\n"}`,
           );
           console.log("--------------------------------------------------");
         } else {
@@ -474,28 +415,46 @@ const applyCert = async (api: ApiPromise, keyring: Keyring) => {
     return;
   }
 
+  let results = findPersonAndCertAndPubKeyByName(name);
+  if (results[0] === null) {
+    return;
+  }
+  await certApply(
+    api,
+    keyring,
+    results[2]! as KeyringPair,
+    results[1]! as PassCert,
+  );
+};
+
+const findPersonAndCertAndPubKeyByName = (name: string) => {
   let person = findPersonByName(name);
   if (person === null) {
     console.log("人员不存在，已退出，回到主程序。");
-    return;
+    return [null, null, null];
   }
 
   let passCert = PassCert_Store.get(person.id as string);
   if (!passCert) {
     console.log("人员未申请证件，已退出，回到主程序。");
-    return;
+    return [null, null, null];
   }
   let [address, _] = findCompanyById(person.companyId);
   if (address === null) {
     console.log("公司不存在，已退出，回到主程序。");
-    return;
+    return [null, null, null];
   }
   let keypair = findKeypairByAddress(address as string);
   if (keypair === null) {
     console.log("错误，已退出，回到主程序。");
-    return;
+    return [null, null, null];
   }
-  await certApply(api, keyring, keypair, passCert);
+  return [person, passCert, keypair];
+};
+
+const newCertApply = async (api: ApiPromise, keyring: Keyring) => {
+  printPersonCerts();
+  await applyCert(api, keyring);
 };
 
 const findPersonByName = (name: string) => {

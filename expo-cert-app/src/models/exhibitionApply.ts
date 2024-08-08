@@ -1,9 +1,3 @@
-import {
-  Default_Exhibitor_Cert_Num,
-  Default_Visitor_Cert_Num,
-  SQUARE_METERS_PER_CERTIFICATE,
-} from "../constants/constants";
-
 /** 展会报名 */
 export class ExhibitionApply {
   private _id: string | null = null;
@@ -13,8 +7,6 @@ export class ExhibitionApply {
   private _exhibits: string | null = null;
   private _boothType: BoothType | null = null;
   private _boothNumOrArea: number | null = null;
-  private _numOfVisitorCert: number | null = null;
-  private _numOfExhibitorCert: number | null = null;
 
   constructor(companyId: string, purpose: Purpose) {
     this._companyId = companyId;
@@ -72,51 +64,6 @@ export class ExhibitionApply {
   set boothNumOrArea(value: number | null) {
     this._boothNumOrArea = value;
   }
-  /** 专业观众证数量 */
-  get numOfVisitorCert(): number | null {
-    return this._numOfVisitorCert;
-  }
-  /** 专业观众证数量 */
-  set numOfVisitorCert(value: number | null) {
-    this._numOfVisitorCert = value;
-  }
-  /** 参展商证数量 */
-  get numOfExhibitorCert(): number | null {
-    return this._numOfExhibitorCert;
-  }
-  /** 参展商证数量 */
-  set numOfExhibitorCert(value: number | null) {
-    this._numOfExhibitorCert = value;
-  }
-
-  calculateCertNum = () => {
-    // 如果是采购目的，专业观众证数量为2，参展商证数量为0
-    if (this.purpose === Purpose.Purchase) {
-      this.numOfVisitorCert = Default_Visitor_Cert_Num;
-      this.numOfExhibitorCert = 0;
-      return;
-    }
-    // 如果是参展目的，且是标准展位，根据展位数量计算专业观众证数量和参展商证数量
-    if (this.boothType === BoothType.Standard && this.boothNumOrArea !== null) {
-      this.numOfVisitorCert = this.boothNumOrArea * Default_Visitor_Cert_Num;
-      this.numOfExhibitorCert =
-        this.boothNumOrArea * Default_Exhibitor_Cert_Num;
-      return;
-    }
-    // 如果是参展目的，且是净地展位，根据展位面积计算专业观众证数量和参展商证数量
-    if (
-      this.boothType === BoothType.BareSpace &&
-      this.boothNumOrArea !== null
-    ) {
-      // 计算总的证件数量
-      const totalCerts = Math.round(
-        this.boothNumOrArea / SQUARE_METERS_PER_CERTIFICATE,
-      );
-      // 平均分给专业观众证和参展商证
-      this.numOfVisitorCert = Math.round(totalCerts / 2);
-      this.numOfExhibitorCert = totalCerts - this.numOfVisitorCert;
-    }
-  };
 }
 
 /** 审核状态 */

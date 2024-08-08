@@ -4,6 +4,7 @@ export class PassCert {
   private _personId: string;
   private _certType: CertType;
   private _status: CertStatus;
+  private _onChain: boolean = false;
 
   constructor(
     applyId: string,
@@ -55,6 +56,13 @@ export class PassCert {
   }
   set status(value: CertStatus) {
     this._status = value;
+  }
+  /** 是否上链 */
+  get onChain(): boolean {
+    return this._onChain;
+  }
+  set onChain(value: boolean) {
+    this._onChain = value;
   }
 }
 

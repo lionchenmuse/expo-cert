@@ -18,7 +18,7 @@ mod service;
 pub mod pallet {
     // Import various useful types required by all FRAME pallets.
     use super::*;
-    use frame_support::{ensure, pallet_prelude::*, Blake2_128Concat};
+    use frame_support::{pallet_prelude::*, Blake2_128Concat};
     use frame_system::pallet_prelude::*;
     use model::model::{ApplyId, CertApply, ExhibitionApply};
 
@@ -177,21 +177,27 @@ pub mod pallet {
             log::debug!("进入approve_cert()方法，开始处理。。。。。。。。。。。。");
             let who = ensure_signed(origin)?;
 
-            let mut cert_apply = CertApplies::<T>::get(cert_apply_id.clone());
-            // 检查证件申请是否存在
-            ensure!(
-                cert_apply.is_some(),
-                Error::<T>::CertApplyNonExistent
-            );
-            // 检查证件申请状态是否为待审
-            ensure!(
-                cert_apply.as_ref().unwrap().status == model::model::CertStatus::Pending, 
-                Error::<T>::CertApplyStatusError
-            );
-            // 修改证件申请状态为通过
-            cert_apply.as_mut().unwrap().status = model::model::CertStatus::Approved;
-            // 更新证件申请信息
-            CertApplies::<T>::insert(cert_apply_id.clone(), cert_apply.unwrap());
+            // let mut cert_apply = CertApplies::<T>::get(cert_apply_id.clone());
+            // // 检查证件申请是否存在
+            // ensure!(
+            //     cert_apply.is_some(),
+            //     Error::<T>::CertApplyNonExistent
+            // );
+            // // 检查证件申请状态是否为待审
+            // ensure!(
+            //     cert_apply.as_ref().unwrap().status == model::model::CertStatus::Pending, 
+            //     Error::<T>::CertApplyStatusError
+            // );
+            // // 修改证件申请状态为通过
+            // cert_apply.as_mut().unwrap().status = model::model::CertStatus::Approved;
+            // // 更新证件申请信息
+            // CertApplies::<T>::insert(cert_apply_id.clone(), cert_apply.unwrap());
+
+            modify_cert_status::<T>(
+                &cert_apply_id,
+                model::model::CertStatus::Pending,
+                model::model::CertStatus::Approved,
+            )?;
 
             // 触发事件
             Self::deposit_event(Event::CertApplyApproved(who, cert_apply_id));
@@ -209,21 +215,27 @@ pub mod pallet {
             log::debug!("进入reject_cert()方法，开始处理。。。。。。。。。。。。");
             let who = ensure_signed(origin)?;
 
-            let mut cert_apply = CertApplies::<T>::get(cert_apply_id.clone());
-            // 检查证件申请是否存在
-            ensure!(
-                cert_apply.is_some(),
-                Error::<T>::CertApplyNonExistent
-            );
-            // 检查证件申请状态是否为待审
-            ensure!(
-                cert_apply.as_ref().unwrap().status == model::model::CertStatus::Pending, 
-                Error::<T>::CertApplyStatusError
-            );
-            // 修改证件申请状态为驳回
-            cert_apply.as_mut().unwrap().status = model::model::CertStatus::Rejected;
-            // 更新证件申请信息
-            CertApplies::<T>::insert(cert_apply_id.clone(), cert_apply.unwrap());
+            // let mut cert_apply = CertApplies::<T>::get(cert_apply_id.clone());
+            // // 检查证件申请是否存在
+            // ensure!(
+            //     cert_apply.is_some(),
+            //     Error::<T>::CertApplyNonExistent
+            // );
+            // // 检查证件申请状态是否为待审
+            // ensure!(
+            //     cert_apply.as_ref().unwrap().status == model::model::CertStatus::Pending, 
+            //     Error::<T>::CertApplyStatusError
+            // );
+            // // 修改证件申请状态为驳回
+            // cert_apply.as_mut().unwrap().status = model::model::CertStatus::Rejected;
+            // // 更新证件申请信息
+            // CertApplies::<T>::insert(cert_apply_id.clone(), cert_apply.unwrap());
+
+            modify_cert_status::<T>(
+                &cert_apply_id,
+                model::model::CertStatus::Pending,
+                model::model::CertStatus::Rejected,
+            )?;
 
             // 触发事件
             Self::deposit_event(Event::CertApplyRejected(who, cert_apply_id));
@@ -243,21 +255,27 @@ pub mod pallet {
             log::debug!("进入made_cert()方法，开始处理。。。。。。。。。。。。");
             let who = ensure_signed(origin)?;
 
-            let mut cert_apply = CertApplies::<T>::get(cert_apply_id.clone());
-            // 检查证件申请是否存在
-            ensure!(
-                cert_apply.is_some(),
-                Error::<T>::CertApplyNonExistent
-            );
-            // 检查证件申请状态是否为通过
-            ensure!(
-                cert_apply.as_ref().unwrap().status == model::model::CertStatus::Approved, 
-                Error::<T>::CertApplyStatusError
-            );
-            // 修改证件申请状态为已制证
-            cert_apply.as_mut().unwrap().status = model::model::CertStatus::Made;
-            // 更新证件申请信息
-            CertApplies::<T>::insert(cert_apply_id.clone(), cert_apply.unwrap());
+            // let mut cert_apply = CertApplies::<T>::get(cert_apply_id.clone());
+            // // 检查证件申请是否存在
+            // ensure!(
+            //     cert_apply.is_some(),
+            //     Error::<T>::CertApplyNonExistent
+            // );
+            // // 检查证件申请状态是否为通过
+            // ensure!(
+            //     cert_apply.as_ref().unwrap().status == model::model::CertStatus::Approved, 
+            //     Error::<T>::CertApplyStatusError
+            // );
+            // // 修改证件申请状态为已制证
+            // cert_apply.as_mut().unwrap().status = model::model::CertStatus::Made;
+            // // 更新证件申请信息
+            // CertApplies::<T>::insert(cert_apply_id.clone(), cert_apply.unwrap());
+
+            modify_cert_status::<T>(
+                &cert_apply_id,
+                model::model::CertStatus::Approved,
+                model::model::CertStatus::Made,
+            )?;
 
             // 触发事件
             Self::deposit_event(Event::CertMade(who, cert_apply_id));
@@ -276,21 +294,27 @@ pub mod pallet {
             log::debug!("进入issued_cert()方法，开始处理。。。。。。。。。。。。");
             let who = ensure_signed(origin)?;
 
-            let mut cert_apply = CertApplies::<T>::get(cert_apply_id.clone());
-            // 检查证件申请是否存在
-            ensure!(
-                cert_apply.is_some(),
-                Error::<T>::CertApplyNonExistent
-            );
-            // 检查证件申请状态是否为已制证
-            ensure!(
-                cert_apply.as_ref().unwrap().status == model::model::CertStatus::Made, 
-                Error::<T>::CertApplyStatusError
-            );
-            // 修改证件申请状态为已发证
-            cert_apply.as_mut().unwrap().status = model::model::CertStatus::Issued;
-            // 更新证件申请信息
-            CertApplies::<T>::insert(cert_apply_id.clone(), cert_apply.unwrap());
+            // let mut cert_apply = CertApplies::<T>::get(cert_apply_id.clone());
+            // // 检查证件申请是否存在
+            // ensure!(
+            //     cert_apply.is_some(),
+            //     Error::<T>::CertApplyNonExistent
+            // );
+            // // 检查证件申请状态是否为已制证
+            // ensure!(
+            //     cert_apply.as_ref().unwrap().status == model::model::CertStatus::Made, 
+            //     Error::<T>::CertApplyStatusError
+            // );
+            // // 修改证件申请状态为已发证
+            // cert_apply.as_mut().unwrap().status = model::model::CertStatus::Issued;
+            // // 更新证件申请信息
+            // CertApplies::<T>::insert(cert_apply_id.clone(), cert_apply.unwrap());
+
+            modify_cert_status::<T>(
+                &cert_apply_id,
+                model::model::CertStatus::Made,
+                model::model::CertStatus::Issued,
+            )?;
 
             // 触发事件
             Self::deposit_event(Event::CertIssued(who, cert_apply_id));
@@ -298,9 +322,25 @@ pub mod pallet {
             log::debug!("issued_cert()方法处理结束。。。。。。。。。。。。");
             Ok(())
         }
-        
+    }
 
-        
+    fn modify_cert_status<T: Config>(
+        cert_apply_id: &ApplyId,
+        current_status: model::model::CertStatus,
+        next_status: model::model::CertStatus,
+    ) -> DispatchResult {
+        if !CertApplies::<T>::contains_key(cert_apply_id.clone()) {
+            return Err(Error::<T>::CertApplyNonExistent.into());
+        }
+
+        let mut cert_apply = CertApplies::<T>::get(cert_apply_id.clone());
+        if cert_apply.as_ref().unwrap().status != current_status {
+            return Err(Error::<T>::CertApplyStatusError.into());
+        }
+        cert_apply.as_mut().unwrap().status = next_status;
+        CertApplies::<T>::insert(cert_apply_id.clone(), cert_apply.unwrap());
+
+        Ok(())
     }
 
 

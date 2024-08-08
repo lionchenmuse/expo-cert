@@ -13,11 +13,11 @@ export const ALICE = "Alice";
 export const BOB = "Bob";
 
 /** 默认一个标准展位可以申请的专业观众证数量 */
-export const Default_Visitor_Cert_Num = 2;
+// export const Default_Visitor_Cert_Num = 2;
 /** 默认一个标准展位可以申请的参展商证数量 */
-export const Default_Exhibitor_Cert_Num = 3;
+// export const Default_Exhibitor_Cert_Num = 3;
 /** 默认一个净地展位每多少平米可以申请的1张证件 */
-export const SQUARE_METERS_PER_CERTIFICATE = 6;
+// export const SQUARE_METERS_PER_CERTIFICATE = 6;
 
 export const Key_Store: KeyringPair[] = [];
 /** 公司表：key：账户公钥，value：公司数组 */
