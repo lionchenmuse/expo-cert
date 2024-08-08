@@ -65,7 +65,15 @@ pub mod pallet {
         /// 展会报名成功
         ExhibitionApplied(T::AccountId, ApplyId),
         /// 证件申请成功
-        CertApplied(T::AccountId, ApplyId),
+        CertAppliedSucess(T::AccountId, ApplyId),
+        /// 证件申请审核通过
+        CertApplyApproved(T::AccountId, ApplyId),
+        /// 证件申请审核驳回
+        CertApplyRejected(T::AccountId, ApplyId),
+        /// 证件已制证
+        CertMade(T::AccountId, ApplyId),
+        /// 证件已发证
+        CertIssued(T::AccountId, ApplyId),
     }
 
     #[pallet::error]
@@ -78,6 +86,10 @@ pub mod pallet {
         CompanyNotApproved,
         /// 重复申请证件
         CertRepeatedApply,
+        /// 证件申请不存在
+        CertApplyNonExistent,
+        /// 证件申请状态错误
+        CertApplyStatusError,
     }
 
     #[pallet::hooks]
@@ -87,6 +99,7 @@ pub mod pallet {
 
     #[pallet::call]
     impl <T: Config> Pallet<T> {
+        /// 企业报名，默认审核通过
         #[pallet::call_index(0)]
         #[pallet::weight({0})]
         pub fn company_apply(
@@ -114,6 +127,7 @@ pub mod pallet {
             Ok(())
         }
 
+        /// 申请展会证件
         #[pallet::call_index(1)]
         #[pallet::weight({0})]
         pub fn cert_apply(
@@ -149,7 +163,139 @@ pub mod pallet {
             // 存入证件申请表
             CertApplies::<T>::insert(cert_apply.id.clone(), cert_apply.clone());
             // 触发事件
-            Self::deposit_event(Event::CertApplied(who, cert_apply.id.clone()));
+            Self::deposit_event(Event::CertAppliedSucess(who, cert_apply.id.clone()));
+            Ok(())
+        }
+
+        /// 通过证件申请
+        #[pallet::call_index(2)]
+        #[pallet::weight({0})]
+        pub fn approve_cert(
+            origin: OriginFor<T>,
+            cert_apply_id: ApplyId,
+        ) -> DispatchResult {
+            log::debug!("进入approve_cert()方法，开始处理。。。。。。。。。。。。");
+            let who = ensure_signed(origin)?;
+
+            let mut cert_apply = CertApplies::<T>::get(cert_apply_id.clone());
+            // 检查证件申请是否存在
+            ensure!(
+                cert_apply.is_some(),
+                Error::<T>::CertApplyNonExistent
+            );
+            // 检查证件申请状态是否为待审
+            ensure!(
+                cert_apply.as_ref().unwrap().status == model::model::CertStatus::Pending, 
+                Error::<T>::CertApplyStatusError
+            );
+            // 修改证件申请状态为通过
+            cert_apply.as_mut().unwrap().status = model::model::CertStatus::Approved;
+            // 更新证件申请信息
+            CertApplies::<T>::insert(cert_apply_id.clone(), cert_apply.unwrap());
+
+            // 触发事件
+            Self::deposit_event(Event::CertApplyApproved(who, cert_apply_id));
+            log::debug!("approve_cert()方法处理结束。。。。。。。。。。。。");
+            Ok(())
+        }
+
+        /// 驳回证件申请
+        #[pallet::call_index(3)]
+        #[pallet::weight({0})]
+        pub fn reject_cert(
+            origin: OriginFor<T>,
+            cert_apply_id: ApplyId,
+        ) -> DispatchResult {
+            log::debug!("进入reject_cert()方法，开始处理。。。。。。。。。。。。");
+            let who = ensure_signed(origin)?;
+
+            let mut cert_apply = CertApplies::<T>::get(cert_apply_id.clone());
+            // 检查证件申请是否存在
+            ensure!(
+                cert_apply.is_some(),
+                Error::<T>::CertApplyNonExistent
+            );
+            // 检查证件申请状态是否为待审
+            ensure!(
+                cert_apply.as_ref().unwrap().status == model::model::CertStatus::Pending, 
+                Error::<T>::CertApplyStatusError
+            );
+            // 修改证件申请状态为驳回
+            cert_apply.as_mut().unwrap().status = model::model::CertStatus::Rejected;
+            // 更新证件申请信息
+            CertApplies::<T>::insert(cert_apply_id.clone(), cert_apply.unwrap());
+
+            // 触发事件
+            Self::deposit_event(Event::CertApplyRejected(who, cert_apply_id));
+
+            log::debug!("reject_cert()方法处理结束。。。。。。。。。。。。");
+            Ok(())
+
+        }
+
+        /// 已制证
+        #[pallet::call_index(4)]
+        #[pallet::weight({0})]
+        pub fn made_cert(
+            origin: OriginFor<T>,
+            cert_apply_id: ApplyId,
+        ) -> DispatchResult {
+            log::debug!("进入made_cert()方法，开始处理。。。。。。。。。。。。");
+            let who = ensure_signed(origin)?;
+
+            let mut cert_apply = CertApplies::<T>::get(cert_apply_id.clone());
+            // 检查证件申请是否存在
+            ensure!(
+                cert_apply.is_some(),
+                Error::<T>::CertApplyNonExistent
+            );
+            // 检查证件申请状态是否为通过
+            ensure!(
+                cert_apply.as_ref().unwrap().status == model::model::CertStatus::Approved, 
+                Error::<T>::CertApplyStatusError
+            );
+            // 修改证件申请状态为已制证
+            cert_apply.as_mut().unwrap().status = model::model::CertStatus::Made;
+            // 更新证件申请信息
+            CertApplies::<T>::insert(cert_apply_id.clone(), cert_apply.unwrap());
+
+            // 触发事件
+            Self::deposit_event(Event::CertMade(who, cert_apply_id));
+
+            log::debug!("made_cert()方法处理结束。。。。。。。。。。。。");
+            Ok(())
+        }
+
+        /// 已发证
+        #[pallet::call_index(5)]
+        #[pallet::weight({0})]
+        pub fn issued_cert(
+            origin: OriginFor<T>,
+            cert_apply_id: ApplyId,
+        ) -> DispatchResult {
+            log::debug!("进入issued_cert()方法，开始处理。。。。。。。。。。。。");
+            let who = ensure_signed(origin)?;
+
+            let mut cert_apply = CertApplies::<T>::get(cert_apply_id.clone());
+            // 检查证件申请是否存在
+            ensure!(
+                cert_apply.is_some(),
+                Error::<T>::CertApplyNonExistent
+            );
+            // 检查证件申请状态是否为已制证
+            ensure!(
+                cert_apply.as_ref().unwrap().status == model::model::CertStatus::Made, 
+                Error::<T>::CertApplyStatusError
+            );
+            // 修改证件申请状态为已发证
+            cert_apply.as_mut().unwrap().status = model::model::CertStatus::Issued;
+            // 更新证件申请信息
+            CertApplies::<T>::insert(cert_apply_id.clone(), cert_apply.unwrap());
+
+            // 触发事件
+            Self::deposit_event(Event::CertIssued(who, cert_apply_id));
+
+            log::debug!("issued_cert()方法处理结束。。。。。。。。。。。。");
             Ok(())
         }
         
