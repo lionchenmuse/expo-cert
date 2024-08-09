@@ -265,6 +265,11 @@ const choose_company_to_apply = async (api: ApiPromise, keyring: Keyring) => {
   await send_company_apply_with_keyringpair(api, keyring, keypair!, apply);
 };
 
+const newCertApply = async (api: ApiPromise, keyring: Keyring) => {
+  printPersonCerts();
+  await applyCert(api, keyring);
+};
+
 const modifyCertStatus = async (api: ApiPromise, keyring: Keyring) => {
   printPersonCerts();
   let name = await readInput("请输入人员姓名(输入0退出)>: ");
@@ -451,11 +456,6 @@ const findPersonAndCertAndPubKeyByName = (name: string) => {
     return [null, null, null];
   }
   return [person, passCert, keypair];
-};
-
-const newCertApply = async (api: ApiPromise, keyring: Keyring) => {
-  printPersonCerts();
-  await applyCert(api, keyring);
 };
 
 const findPersonByName = (name: string) => {

@@ -1,3 +1,7 @@
+/*
+执行单元测试前要先将 utils.ts 中的 readRuntimeVersion() 函数注释掉，否则报错。
+
+*/
 import {
   genUUID,
   hexToUtf8String,

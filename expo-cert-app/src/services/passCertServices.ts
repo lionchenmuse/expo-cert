@@ -17,6 +17,7 @@ import {
   CompanyNotApprovedError,
   throwError,
 } from "../error/businessError";
+import { SubmittableExtrinsic } from "@polkadot/api/promise/types";
 
 export const certApply = async (
   api: ApiPromise,
@@ -27,51 +28,41 @@ export const certApply = async (
   return new Promise(async (resolve, reject) => {
     console.log("进入certApply()方法...");
     let success = true;
-    try {
-      let encodedId = utf8StringToHex(passCert.id!);
-      console.log("已申请证件id编码后：", encodedId);
+    let encodedId = utf8StringToHex(passCert.id!);
+    console.log("已申请证件id编码后：", encodedId);
 
-      const tx = await api.tx.expoCert.certApply({
-        id: encodedId,
-        exhibitionApplyId: utf8StringToHex(passCert.applyId),
-        status: passCert.status,
-      });
+    const tx = await api.tx.expoCert.certApply({
+      id: encodedId,
+      exhibitionApplyId: utf8StringToHex(passCert.applyId),
+      status: passCert.status,
+    });
+
+    try {
       await tx.signAndSend(sender, async ({ events = [], status }) => {
         // Ready 状态表示交易已经被发送到网络，但还没有被打包到区块中
-        if (status.isReady) {
-          console.log(`Current status: ${status.type} ....... `);
-          setPrintStarFlag(true);
-          printStar();
-          // InBlock 状态表示交易已经被打包到区块中
-        } else if (status.isInBlock) {
+        // InBlock 状态表示交易已经被打包到区块中，交易可能成功，可能失败
+        if (status.isInBlock) {
           setPrintStarFlag(false);
           console.log(
-            "\nTransaction included at block hash",
+            "Transaction included at block hash",
             status.asInBlock.toHex(),
           );
-          console.log();
-
           try {
-            events.forEach(({ event: { data, method, section }, phase }) => {
+            events.forEach(({ event: { data, method, section } }) => {
               if (method === "ExtrinsicFailed") {
-                let errorJson = JSON.parse(data.toString());
+                const errorJson = JSON.parse(data.toString());
                 const {
                   module: { index, error },
                 } = errorJson[0];
                 const errorCode: number = littleEndianHexStringToInt(error);
                 throwError(errorCode);
-              } else {
-                // 打印method, section 和 data信息
-                console.log(
-                  `\nCurrent status: ${status.type} ....... \nmethod: ${method} \nsection: ${section} \ndata: ${data}`,
-                );
               }
             });
             setPrintStarFlag(true);
             printStar();
           } catch (error) {
             setPrintStarFlag(false);
-            console.log("certApply()：error:", error);
+            console.log("certApply() error:", error);
             setPrintStarFlag(true);
             printStar();
             success = false;
@@ -82,8 +73,6 @@ export const certApply = async (
           // 即 Finalized 状态不代表交易成功!
         } else if (status.isFinalized) {
           setPrintStarFlag(false);
-          console.log();
-
           console.log(
             "\nTransaction finalized at block hash",
             status.asFinalized.toHex(),
@@ -149,31 +138,23 @@ const approve_cert = async (
   return new Promise(async (resolve, reject) => {
     console.log("进入approve_cert()方法...");
     let success = true;
+    const encodedId = utf8StringToHex(passCert.id!);
+    console.log("待审核的证件id编码后：", encodedId);
+    const tx = await api.tx.expoCert.approveCert(encodedId);
 
     try {
-      const encodedId = utf8StringToHex(passCert.id!);
-      console.log("待审核的证件id编码后：", encodedId);
-
-      const tx = await api.tx.expoCert.approveCert(encodedId);
       await tx.signAndSend(sender, async ({ events = [], status }) => {
         // Ready 状态表示交易已经被发送到网络，但还没有被打包到区块中
-        if (status.isReady) {
-          console.log(`Current status: ${status.type} ....... `);
-          setPrintStarFlag(true);
-          printStar();
-          // InBlock 状态表示交易已经被打包到区块中
-        } else if (status.isInBlock) {
+        if (status.isInBlock) {
           setPrintStarFlag(false);
           console.log(
-            "\nTransaction included at block hash",
+            "Transaction included at block hash",
             status.asInBlock.toHex(),
           );
-          console.log();
-
           try {
             events.forEach(({ event: { data, method, section }, phase }) => {
               if (method === "ExtrinsicFailed") {
-                let errorJson = JSON.parse(data.toString());
+                const errorJson = JSON.parse(data.toString());
                 const {
                   module: { index, error },
                 } = errorJson[0];
@@ -196,8 +177,6 @@ const approve_cert = async (
           // 即 Finalized 状态不代表交易成功!
         } else if (status.isFinalized) {
           setPrintStarFlag(false);
-          console.log();
-
           console.log(
             "\nTransaction finalized at block hash",
             status.asFinalized.toHex(),
@@ -230,29 +209,22 @@ const reject_cert = async (
 ) => {
   return new Promise(async (resolve, reject) => {
     let success = true;
+    const encodedId = utf8StringToHex(passCert.id!);
+    const tx = await api.tx.expoCert.rejectCert(encodedId);
 
     try {
-      const encodedId = utf8StringToHex(passCert.id!);
-      const tx = await api.tx.expoCert.rejectCert(encodedId);
       await tx.signAndSend(sender, async ({ events = [], status }) => {
         // Ready 状态表示交易已经被发送到网络，但还没有被打包到区块中
-        if (status.isReady) {
-          console.log(`Current status: ${status.type} ....... `);
-          setPrintStarFlag(true);
-          printStar();
-          // InBlock 状态表示交易已经被打包到区块中
-        } else if (status.isInBlock) {
+        if (status.isInBlock) {
           setPrintStarFlag(false);
           console.log(
-            "\nTransaction included at block hash",
+            "Transaction included at block hash",
             status.asInBlock.toHex(),
           );
-          console.log();
-
           try {
             events.forEach(({ event: { data, method, section }, phase }) => {
               if (method === "ExtrinsicFailed") {
-                let errorJson = JSON.parse(data.toString());
+                const errorJson = JSON.parse(data.toString());
                 const {
                   module: { index, error },
                 } = errorJson[0];
@@ -275,8 +247,6 @@ const reject_cert = async (
           // 即 Finalized 状态不代表交易成功!
         } else if (status.isFinalized) {
           setPrintStarFlag(false);
-          console.log();
-
           console.log(
             "\nTransaction finalized at block hash",
             status.asFinalized.toHex(),
@@ -309,29 +279,21 @@ const made_cert = async (
 ) => {
   return new Promise(async (resolve, reject) => {
     let success = true;
+    const encodedId = utf8StringToHex(passCert.id!);
+    const tx = await api.tx.expoCert.madeCert(encodedId);
 
     try {
-      const encodedId = utf8StringToHex(passCert.id!);
-      const tx = await api.tx.expoCert.madeCert(encodedId);
       await tx.signAndSend(sender, async ({ events = [], status }) => {
-        // Ready 状态表示交易已经被发送到网络，但还没有被打包到区块中
-        if (status.isReady) {
-          console.log(`Current status: ${status.type} ....... `);
-          setPrintStarFlag(true);
-          printStar();
-          // InBlock 状态表示交易已经被打包到区块中
-        } else if (status.isInBlock) {
+        if (status.isInBlock) {
           setPrintStarFlag(false);
           console.log(
-            "\nTransaction included at block hash",
+            "Transaction included at block hash",
             status.asInBlock.toHex(),
           );
-          console.log();
-
           try {
             events.forEach(({ event: { data, method, section }, phase }) => {
               if (method === "ExtrinsicFailed") {
-                let errorJson = JSON.parse(data.toString());
+                const errorJson = JSON.parse(data.toString());
                 const {
                   module: { index, error },
                 } = errorJson[0];
@@ -343,7 +305,7 @@ const made_cert = async (
             printStar();
           } catch (error) {
             setPrintStarFlag(false);
-            console.log("reject_cert() error:", error);
+            console.log("made_cert() error:", error);
             setPrintStarFlag(true);
             printStar();
             success = false;
@@ -354,8 +316,6 @@ const made_cert = async (
           // 即 Finalized 状态不代表交易成功!
         } else if (status.isFinalized) {
           setPrintStarFlag(false);
-          console.log();
-
           console.log(
             "\nTransaction finalized at block hash",
             status.asFinalized.toHex(),
@@ -388,29 +348,21 @@ const issue_cert = async (
 ) => {
   return new Promise(async (resolve, reject) => {
     let success = true;
+    const encodedId = utf8StringToHex(passCert.id!);
+    const tx = await api.tx.expoCert.issuedCert(encodedId);
 
     try {
-      const encodedId = utf8StringToHex(passCert.id!);
-      const tx = await api.tx.expoCert.issuedCert(encodedId);
       await tx.signAndSend(sender, async ({ events = [], status }) => {
-        // Ready 状态表示交易已经被发送到网络，但还没有被打包到区块中
-        if (status.isReady) {
-          console.log(`Current status: ${status.type} ....... `);
-          setPrintStarFlag(true);
-          printStar();
-          // InBlock 状态表示交易已经被打包到区块中
-        } else if (status.isInBlock) {
+        if (status.isInBlock) {
           setPrintStarFlag(false);
           console.log(
-            "\nTransaction included at block hash",
+            "Transaction included at block hash",
             status.asInBlock.toHex(),
           );
-          console.log();
-
           try {
             events.forEach(({ event: { data, method, section }, phase }) => {
               if (method === "ExtrinsicFailed") {
-                let errorJson = JSON.parse(data.toString());
+                const errorJson = JSON.parse(data.toString());
                 const {
                   module: { index, error },
                 } = errorJson[0];
@@ -422,7 +374,7 @@ const issue_cert = async (
             printStar();
           } catch (error) {
             setPrintStarFlag(false);
-            console.log("reject_cert() error:", error);
+            console.log("issue_cert() error:", error);
             setPrintStarFlag(true);
             printStar();
             success = false;
@@ -433,8 +385,6 @@ const issue_cert = async (
           // 即 Finalized 状态不代表交易成功!
         } else if (status.isFinalized) {
           setPrintStarFlag(false);
-          console.log();
-
           console.log(
             "\nTransaction finalized at block hash",
             status.asFinalized.toHex(),

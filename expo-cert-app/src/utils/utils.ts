@@ -21,10 +21,8 @@ import {
   Purpose,
 } from "../models/exhibitionApply";
 import { save_company_apply } from "../services/exhibitionApplyServices";
-import { KeyringPair } from "@polkadot/keyring/types";
 import { Gender, Person } from "../models/person";
-import { keyExtractPath } from "@polkadot/util-crypto";
-import { CertStatus, CertType, PassCert } from "../models/passCert";
+import { CertType, PassCert } from "../models/passCert";
 
 export const sleep = async (ms: number) => {
   await new Promise((resolve) => setTimeout(resolve, ms));
