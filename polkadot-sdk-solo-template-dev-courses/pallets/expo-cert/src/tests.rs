@@ -123,7 +123,8 @@ fn test_cert_apply() {
 
         assert_ok!(ExpoCert::company_apply(RuntimeOrigin::signed(1), apply.clone()));
 
-        let id = "987654321".to_string();
+        // let id = "987654321".to_string();
+        let id = "0x6330343339656432653862393461626239356165376332313133313863646239".to_string();
         let mut cert_apply_id = ApplyId::new();
         for c in id.chars() {
             cert_apply_id.try_push(c as u8).expect("push char to apply_id failed");
@@ -234,7 +235,7 @@ fn test_approve_cert_apply() {
         };
         assert_ok!(ExpoCert::company_apply(RuntimeOrigin::signed(1), apply.clone()));
 
-        let id = "987654321".to_string();
+        let id = "6330343339656432653862393461626239356165376332313133313863646239".to_string();
         let mut cert_apply_id = ApplyId::new();
         for c in id.chars() {
             cert_apply_id.try_push(c as u8).expect("push char to apply_id failed");

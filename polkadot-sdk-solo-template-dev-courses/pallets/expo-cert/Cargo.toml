@@ -31,11 +31,10 @@ frame-system = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "
 
 # Lowest-abstraction level for the Substrate runtime
 sp-std = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.10.0", default-features = false }
-# 加了 sp-core 报错：
+# 加了 sp-core 和  sp-io 报错：
 # error: the wasm*-unknown-unknown targets are not supported by default, you may need to enable the "js" feature.
 # sp-core = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.10.0" }
-
-log = "0.4.22"
+# sp-io = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.10.0" }
 
 [dev-dependencies]
 sp-core = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.10.0" }

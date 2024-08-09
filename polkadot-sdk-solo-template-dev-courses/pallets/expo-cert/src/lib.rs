@@ -10,9 +10,6 @@ mod mock;
 mod tests;
 
 mod model;
-mod service;
-
-
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -106,7 +103,6 @@ pub mod pallet {
             origin: OriginFor<T>,
             mut exhibition_apply: ExhibitionApply,
         ) -> DispatchResult {
-            log::debug!("进入company_apply()方法，开始处理。。。。。。。。。。。。");
             let who = ensure_signed(origin)?;
 
             let id = exhibition_apply.id.clone();
@@ -123,7 +119,6 @@ pub mod pallet {
             // 触发事件
             Self::deposit_event(Event::ExhibitionApplied(who, id));
             
-            log::debug!("company_apply()方法处理结束。。。。。。。。。。。。");
             Ok(())
         }
 
@@ -134,7 +129,6 @@ pub mod pallet {
             origin: OriginFor<T>,
             mut cert_apply: CertApply,
         ) -> DispatchResult {
-            log::debug!("进入cert_apply()方法，开始处理。。。。。。。。。。。。");
             let who = ensure_signed(origin)?;
 
             let exhibition_apply_id = cert_apply.exhibition_apply_id.clone();
@@ -174,25 +168,8 @@ pub mod pallet {
             origin: OriginFor<T>,
             cert_apply_id: ApplyId,
         ) -> DispatchResult {
-            log::debug!("进入approve_cert()方法，开始处理。。。。。。。。。。。。");
             let who = ensure_signed(origin)?;
-
-            // let mut cert_apply = CertApplies::<T>::get(cert_apply_id.clone());
-            // // 检查证件申请是否存在
-            // ensure!(
-            //     cert_apply.is_some(),
-            //     Error::<T>::CertApplyNonExistent
-            // );
-            // // 检查证件申请状态是否为待审
-            // ensure!(
-            //     cert_apply.as_ref().unwrap().status == model::model::CertStatus::Pending, 
-            //     Error::<T>::CertApplyStatusError
-            // );
-            // // 修改证件申请状态为通过
-            // cert_apply.as_mut().unwrap().status = model::model::CertStatus::Approved;
-            // // 更新证件申请信息
-            // CertApplies::<T>::insert(cert_apply_id.clone(), cert_apply.unwrap());
-
+            // 修改证件状态，如果有错误抛出错误
             modify_cert_status::<T>(
                 &cert_apply_id,
                 model::model::CertStatus::Pending,
@@ -201,7 +178,6 @@ pub mod pallet {
 
             // 触发事件
             Self::deposit_event(Event::CertApplyApproved(who, cert_apply_id));
-            log::debug!("approve_cert()方法处理结束。。。。。。。。。。。。");
             Ok(())
         }
 
@@ -212,24 +188,7 @@ pub mod pallet {
             origin: OriginFor<T>,
             cert_apply_id: ApplyId,
         ) -> DispatchResult {
-            log::debug!("进入reject_cert()方法，开始处理。。。。。。。。。。。。");
             let who = ensure_signed(origin)?;
-
-            // let mut cert_apply = CertApplies::<T>::get(cert_apply_id.clone());
-            // // 检查证件申请是否存在
-            // ensure!(
-            //     cert_apply.is_some(),
-            //     Error::<T>::CertApplyNonExistent
-            // );
-            // // 检查证件申请状态是否为待审
-            // ensure!(
-            //     cert_apply.as_ref().unwrap().status == model::model::CertStatus::Pending, 
-            //     Error::<T>::CertApplyStatusError
-            // );
-            // // 修改证件申请状态为驳回
-            // cert_apply.as_mut().unwrap().status = model::model::CertStatus::Rejected;
-            // // 更新证件申请信息
-            // CertApplies::<T>::insert(cert_apply_id.clone(), cert_apply.unwrap());
 
             modify_cert_status::<T>(
                 &cert_apply_id,
@@ -240,7 +199,6 @@ pub mod pallet {
             // 触发事件
             Self::deposit_event(Event::CertApplyRejected(who, cert_apply_id));
 
-            log::debug!("reject_cert()方法处理结束。。。。。。。。。。。。");
             Ok(())
 
         }
@@ -252,24 +210,7 @@ pub mod pallet {
             origin: OriginFor<T>,
             cert_apply_id: ApplyId,
         ) -> DispatchResult {
-            log::debug!("进入made_cert()方法，开始处理。。。。。。。。。。。。");
             let who = ensure_signed(origin)?;
-
-            // let mut cert_apply = CertApplies::<T>::get(cert_apply_id.clone());
-            // // 检查证件申请是否存在
-            // ensure!(
-            //     cert_apply.is_some(),
-            //     Error::<T>::CertApplyNonExistent
-            // );
-            // // 检查证件申请状态是否为通过
-            // ensure!(
-            //     cert_apply.as_ref().unwrap().status == model::model::CertStatus::Approved, 
-            //     Error::<T>::CertApplyStatusError
-            // );
-            // // 修改证件申请状态为已制证
-            // cert_apply.as_mut().unwrap().status = model::model::CertStatus::Made;
-            // // 更新证件申请信息
-            // CertApplies::<T>::insert(cert_apply_id.clone(), cert_apply.unwrap());
 
             modify_cert_status::<T>(
                 &cert_apply_id,
@@ -280,7 +221,6 @@ pub mod pallet {
             // 触发事件
             Self::deposit_event(Event::CertMade(who, cert_apply_id));
 
-            log::debug!("made_cert()方法处理结束。。。。。。。。。。。。");
             Ok(())
         }
 
@@ -291,24 +231,7 @@ pub mod pallet {
             origin: OriginFor<T>,
             cert_apply_id: ApplyId,
         ) -> DispatchResult {
-            log::debug!("进入issued_cert()方法，开始处理。。。。。。。。。。。。");
             let who = ensure_signed(origin)?;
-
-            // let mut cert_apply = CertApplies::<T>::get(cert_apply_id.clone());
-            // // 检查证件申请是否存在
-            // ensure!(
-            //     cert_apply.is_some(),
-            //     Error::<T>::CertApplyNonExistent
-            // );
-            // // 检查证件申请状态是否为已制证
-            // ensure!(
-            //     cert_apply.as_ref().unwrap().status == model::model::CertStatus::Made, 
-            //     Error::<T>::CertApplyStatusError
-            // );
-            // // 修改证件申请状态为已发证
-            // cert_apply.as_mut().unwrap().status = model::model::CertStatus::Issued;
-            // // 更新证件申请信息
-            // CertApplies::<T>::insert(cert_apply_id.clone(), cert_apply.unwrap());
 
             modify_cert_status::<T>(
                 &cert_apply_id,
@@ -319,7 +242,6 @@ pub mod pallet {
             // 触发事件
             Self::deposit_event(Event::CertIssued(who, cert_apply_id));
 
-            log::debug!("issued_cert()方法处理结束。。。。。。。。。。。。");
             Ok(())
         }
     }
@@ -342,6 +264,4 @@ pub mod pallet {
 
         Ok(())
     }
-
-
 }
