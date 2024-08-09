@@ -99,6 +99,7 @@ const main = async () => {
         break;
       case "7":
         checkPassCerts(); // 查询证件信息
+        break;
       case "8":
         await modifyCertStatus(api, keyring); // 修改证件状态
         break;
@@ -311,7 +312,7 @@ const modifyCertStatus = async (api: ApiPromise, keyring: Keyring) => {
       return;
   }
 
-  modify_cert_status(
+  await modify_cert_status(
     api,
     keyring,
     results[2]! as KeyringPair,

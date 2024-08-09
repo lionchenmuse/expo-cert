@@ -25,10 +25,14 @@ export const certApply = async (
   passCert: PassCert,
 ) => {
   return new Promise(async (resolve, reject) => {
+    console.log("进入certApply()方法...");
     let success = true;
     try {
+      let encodedId = utf8StringToHex(passCert.id!);
+      console.log("已申请证件id编码后：", encodedId);
+
       const tx = await api.tx.expoCert.certApply({
-        id: utf8StringToHex(passCert.id!),
+        id: encodedId,
         exhibitionApplyId: utf8StringToHex(passCert.applyId),
         status: passCert.status,
       });
@@ -56,6 +60,11 @@ export const certApply = async (
                 } = errorJson[0];
                 const errorCode: number = littleEndianHexStringToInt(error);
                 throwError(errorCode);
+              } else {
+                // 打印method, section 和 data信息
+                console.log(
+                  `\nCurrent status: ${status.type} ....... \nmethod: ${method} \nsection: ${section} \ndata: ${data}`,
+                );
               }
             });
             setPrintStarFlag(true);
@@ -95,6 +104,7 @@ export const certApply = async (
     if (success) {
       passCert.onChain = true;
     }
+    console.log("certApply()方法结束。");
   });
 };
 
@@ -105,8 +115,12 @@ export const modify_cert_status = async (
   passCert: PassCert,
   newStatus: CertStatus,
 ) => {
+  console.log("进入modify_cert_status()方法...");
+  console.log("待审核的证件id：", passCert.id);
+
   switch (newStatus) {
     case CertStatus.Pending:
+      console.log("新状态为待审核，不做处理。");
       break;
     case CertStatus.Approved:
       await approve_cert(api, keyring, sender, passCert);
@@ -123,6 +137,7 @@ export const modify_cert_status = async (
     default:
       break;
   }
+  console.log("modify_cert_status()方法结束。");
 };
 
 const approve_cert = async (
@@ -132,13 +147,14 @@ const approve_cert = async (
   passCert: PassCert,
 ) => {
   return new Promise(async (resolve, reject) => {
+    console.log("进入approve_cert()方法...");
     let success = true;
 
     try {
-      const tx = await api.tx.expoCert.approveCert({
-        id: utf8StringToHex(passCert.id!),
-        exhibitionApplyId: utf8StringToHex(passCert.applyId),
-      });
+      const encodedId = utf8StringToHex(passCert.id!);
+      console.log("待审核的证件id编码后：", encodedId);
+
+      const tx = await api.tx.expoCert.approveCert(encodedId);
       await tx.signAndSend(sender, async ({ events = [], status }) => {
         // Ready 状态表示交易已经被发送到网络，但还没有被打包到区块中
         if (status.isReady) {
@@ -202,6 +218,7 @@ const approve_cert = async (
     if (success) {
       passCert.status = CertStatus.Approved;
     }
+    console.log("approve_cert()方法结束。");
   });
 };
 
@@ -215,10 +232,8 @@ const reject_cert = async (
     let success = true;
 
     try {
-      const tx = await api.tx.expoCert.rejectCert({
-        id: utf8StringToHex(passCert.id!),
-        exhibitionApplyId: utf8StringToHex(passCert.applyId),
-      });
+      const encodedId = utf8StringToHex(passCert.id!);
+      const tx = await api.tx.expoCert.rejectCert(encodedId);
       await tx.signAndSend(sender, async ({ events = [], status }) => {
         // Ready 状态表示交易已经被发送到网络，但还没有被打包到区块中
         if (status.isReady) {
@@ -296,10 +311,8 @@ const made_cert = async (
     let success = true;
 
     try {
-      const tx = await api.tx.expoCert.madeCert({
-        id: utf8StringToHex(passCert.id!),
-        exhibitionApplyId: utf8StringToHex(passCert.applyId),
-      });
+      const encodedId = utf8StringToHex(passCert.id!);
+      const tx = await api.tx.expoCert.madeCert(encodedId);
       await tx.signAndSend(sender, async ({ events = [], status }) => {
         // Ready 状态表示交易已经被发送到网络，但还没有被打包到区块中
         if (status.isReady) {
@@ -377,10 +390,8 @@ const issue_cert = async (
     let success = true;
 
     try {
-      const tx = await api.tx.expoCert.issuedCert({
-        id: utf8StringToHex(passCert.id!),
-        exhibitionApplyId: utf8StringToHex(passCert.applyId),
-      });
+      const encodedId = utf8StringToHex(passCert.id!);
+      const tx = await api.tx.expoCert.issuedCert(encodedId);
       await tx.signAndSend(sender, async ({ events = [], status }) => {
         // Ready 状态表示交易已经被发送到网络，但还没有被打包到区块中
         if (status.isReady) {
