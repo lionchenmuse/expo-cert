@@ -62,7 +62,7 @@ pub mod pallet {
         /// 展会报名成功
         ExhibitionApplied(T::AccountId, ApplyId),
         /// 证件申请成功
-        CertAppliedSucess(T::AccountId, ApplyId),
+        CertAppliedSuccess(T::AccountId, ApplyId),
         /// 证件申请审核通过
         CertApplyApproved(T::AccountId, ApplyId),
         /// 证件申请审核驳回
@@ -157,7 +157,7 @@ pub mod pallet {
             // 存入证件申请表
             CertApplies::<T>::insert(cert_apply.id.clone(), cert_apply.clone());
             // 触发事件
-            Self::deposit_event(Event::CertAppliedSucess(who, cert_apply.id.clone()));
+            Self::deposit_event(Event::CertAppliedSuccess(who, cert_apply.id.clone()));
             Ok(())
         }
 
